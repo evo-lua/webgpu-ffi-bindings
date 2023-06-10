@@ -1,16 +1,39 @@
 local ffi = require("ffi")
 
+local webgpu = ffi.load("wgpu_native")
+local glfw = ffi.load("glfw3")
+local glfwExt = ffi.load("glfw3webgpu")
+
 local gpu = {}
 
+function gpu.load_cdefs()
+	local webgpu_cdefs = require("cdefs")
+	ffi.cdef(webgpu_cdefs)
+
+	local glfw_cdefs = [[
+    // Platform-specific (don't care)
+    typedef void* GLFWwindow;
+    typedef void* GLFWmonitor;
+
+    int glfwInit(void);
+    void glfwWindowHint(int hint, int value);
+    int glfwWindowShouldClose(GLFWwindow window);
+    void glfwPollEvents(void);
+    void glfwDestroyWindow(GLFWwindow window);
+    void glfwTerminate(void);
+
+    GLFWwindow glfwCreateWindow(int width, int height, const char* title, GLFWmonitor monitor, GLFWwindow share);
+]]
+	ffi.cdef(glfw_cdefs)
+
+	local glfw_ext_cdefs = [[
+	// Custom extension
+	WGPUSurface glfwGetWGPUSurface(WGPUInstance instance, GLFWwindow* window);
+]]
+	ffi.cdef(glfw_ext_cdefs)
+end
+
 function gpu.initialize()
-	gpu.load_cdefs()
-
-	local webgpu = ffi.load("wgpu_native")
-	local glfw = ffi.load("glfw3")
-	local glfwExt = ffi.load("glfw3webgpu")
-
-	print(webgpu, glfw, glfwExt)
-
 	local desc = ffi.new("WGPUInstanceDescriptor")
 	-- 	desc.nextInChain = nullptr
 
@@ -141,31 +164,6 @@ function gpu.initialize()
 	runMainLoop()
 end
 
-function gpu.load_cdefs()
-	local webgpu_cdefs = require("cdefs")
-	ffi.cdef(webgpu_cdefs)
-
-	local glfw_cdefs = [[
-    // Platform-specific (don't care)
-    typedef void* GLFWwindow;
-    typedef void* GLFWmonitor;
-
-    int glfwInit(void);
-    void glfwWindowHint(int hint, int value);
-    int glfwWindowShouldClose(GLFWwindow window);
-    void glfwPollEvents(void);
-    void glfwDestroyWindow(GLFWwindow window);
-    void glfwTerminate(void);
-
-    GLFWwindow glfwCreateWindow(int width, int height, const char* title, GLFWmonitor monitor, GLFWwindow share);
-]]
-	ffi.cdef(glfw_cdefs)
-
-	local glfw_ext_cdefs = [[
-	// Custom extension
-	WGPUSurface glfwGetWGPUSurface(WGPUInstance instance, GLFWwindow* window);
-]]
-	ffi.cdef(glfw_ext_cdefs)
-end
+gpu.load_cdefs()
 
 return gpu
