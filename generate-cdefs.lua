@@ -13,7 +13,7 @@ local function preProcessHeaders(fileContents)
 	return table.concat(lines, "\n")
 end
 
-local headerFile = io.open("webgpu.h", "r")
+local headerFile = io.open("deps/webgpu.h", "r")
 local fileContents = headerFile:read("*a")
 headerFile:close()
 
