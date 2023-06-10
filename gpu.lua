@@ -77,16 +77,13 @@ function gpu.initialize()
 			local feature = features[index]
 			print(index + 1, feature)
 		end
-		-- end
-
-		-- 	WGPUSupportedLimits limits = {};
 
 		local limits = ffi.new("WGPUSupportedLimits")
-		-- 	limits.nextInChain = nullptr;
 		local success = webgpu.wgpuAdapterGetLimits(adapter, limits)
 		if not success then
 			error("Failed to get adapter limits")
 		end
+
 		print("Adapter limits:")
 		print("\tmaxTextureDimension1D: ", limits.limits.maxTextureDimension1D)
 		print("\tmaxTextureDimension2D: ", limits.limits.maxTextureDimension2D)
@@ -115,9 +112,7 @@ function gpu.initialize()
 		print("\tmaxComputeWorkgroupSizeZ: ", limits.limits.maxComputeWorkgroupSizeZ)
 		print("\tmaxComputeWorkgroupsPerDimension: ", limits.limits.maxComputeWorkgroupsPerDimension)
 
-		-- 	WGPUAdapterProperties properties = {};
 		local properties = ffi.new("WGPUAdapterProperties")
-		-- 	properties.nextInChain = nullptr;
 		webgpu.wgpuAdapterGetProperties(adapter, properties)
 		print("Adapter properties:")
 		print("\tvendorID: ", properties.vendorID)
@@ -135,7 +130,8 @@ function gpu.initialize()
 	local function runMainLoop()
 		local uv = require("uv")
 		local timer = uv.new_timer()
-		timer:start(0, 16, function() -- starts immediately, repeats every 16 milliseconds
+		local updateTimeInMilliseconds = 16
+		timer:start(0, updateTimeInMilliseconds, function()
 			glfw.glfwPollEvents()
 			if glfw.glfwWindowShouldClose(window) ~= 0 then
 				timer:stop()
