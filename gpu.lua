@@ -39,7 +39,7 @@ function gpu.initialize()
 
 	local instance = webgpu.wgpuCreateInstance(desc)
 	if not instance then
-		error("Could not initialize WebGPU!")
+		error("Could not initialize WebGPU")
 	end
 
 	if not glfw.glfwInit() then
@@ -55,36 +55,19 @@ function gpu.initialize()
 		error("Could not open window!")
 	end
 
-	print("Requesting adaptor...")
-
-	-- 	// Utility function provided by glfw3webgpu.h
-
-	-- TBD not actually part of glfw... easier if in the runtime :/
 	local surface = glfwExt.glfwGetWGPUSurface(instance, window)
-	-- 	WGPUSurface surface = glfwGetWGPUSurface(instance, window)
-	print(surface)
-
-	-- 	// Adapter options: we need the adapter to draw to the window's surface
 	local adapterOpts = ffi.new("WGPURequestAdapterOptions")
-	-- 	adapterOpts.nextInChain = nullptr
 	adapterOpts.compatibleSurface = surface
-
-	-- 	// Get the adapter, see the comments in the definition of the body of the
-	-- 	// requestAdapter function above.
 
 	local requestedAdapter
 	local function onAdapterRequested(status, adapter, message, pUserData)
-		print("onAdapterRequested", status, adapter, message, pUserData)
 		assert(status == webgpu.WGPURequestAdapterStatus_Success, "Failed to request adapter")
 		requestedAdapter = adapter
-		-- TBD
 	end
 	local userdata = nil -- TBD
 	webgpu.wgpuInstanceRequestAdapter(instance, adapterOpts, onAdapterRequested, userdata)
-	print("Got adapter: ", requestedAdapter)
 
 	local function inspectAdapter(adapter)
-		-- std::vector<WGPUFeatureName> features;
 		local featureCount = webgpu.wgpuAdapterEnumerateFeatures(adapter, nil)
 		local features = ffi.new("WGPUFeatureName[?]", featureCount)
 		webgpu.wgpuAdapterEnumerateFeatures(adapter, features)
