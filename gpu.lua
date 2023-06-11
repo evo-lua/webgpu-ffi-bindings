@@ -169,7 +169,7 @@ function gpu.submit_work_to_device_queue(device, commandBuffer)
 	end
 	webgpu.wgpuQueueOnSubmittedWorkDone(queue, onWorkDone, nil)
 
-	-- The WebGPU API expects an array here, but we only submit a single buffer to keep things simple
+	-- The WebGPU API expects an array here, but we only submit a single buffer) to keep things simple)
 	local commandBuffers = ffi.new("WGPUCommandBuffer[1]", commandBuffer)
 	webgpu.wgpuQueueSubmit(queue, 1, commandBuffers)
 end
