@@ -227,22 +227,22 @@ function gpu.request_device_for_adapter(adapter, options)
 	return deviceInfo
 end
 
--- This should work with stock LuaJIT/PUC Lua
-function gpu.run_ui_loop_with_glfw(window, chain)
+-- This should work with stock LuaJIT
+function gpu.run_ui_loop_with_glfw(window, device, chain)
 	while glfw.glfwWindowShouldClose(window) == 0 do
 		glfw.glfwPollEvents()
-		gpu.render_next_frame(chain)
+		gpu.render_next_frame(device, chain)
 	end
 end
 
 -- This only works if using evo, luvit, or when using the luv bindings manually
-function gpu.run_ui_loop_with_libuv(window, chain)
+function gpu.run_ui_loop_with_libuv(window, device, chain)
 	local uv = require("uv")
 	local timer = uv.new_timer()
 	local updateTimeInMilliseconds = 16
 	timer:start(0, updateTimeInMilliseconds, function()
 		glfw.glfwPollEvents()
-		gpu.render_next_frame(chain)
+		gpu.render_next_frame(device, chain)
 		if glfw.glfwWindowShouldClose(window) ~= 0 then
 			timer:stop()
 			uv.stop()
@@ -250,15 +250,44 @@ function gpu.run_ui_loop_with_libuv(window, chain)
 	end)
 end
 
-function gpu.render_next_frame(chain)
+function gpu.render_next_frame(device, chain)
+	if not device then
+		return
+	end
 	if not chain then
 		return
 	end
 
-	local nextTexure = webgpu.wgpuSwapChainGetCurrentTextureView(chain)
-	assert(nextTexure, "Cannot acquire next swap chain texture (window surface has changed?)")
+	local nextTexture = webgpu.wgpuSwapChainGetCurrentTextureView(chain)
+	assert(nextTexture, "Cannot acquire next swap chain texture (window surface has changed?)")
+
+	local encoder = gpu.create_command_encoder_for_device(device)
+	gpu.encode_render_pass(encoder, nextTexture)
+	local commandBuffer = gpu.create_command_buffer_from_encoder(encoder)
+
+	gpu.submit_work_to_device_queue(device, commandBuffer)
 
 	webgpu.wgpuSwapChainPresent(chain)
+end
+
+-- Simple clear color, the most basic render pass imaginable
+function gpu.encode_render_pass(encoder, nextTexture)
+	-- Set up clear color using the built-in clearing mechanism of the render pass
+	local renderPassColorAttachment = ffi.new("WGPURenderPassColorAttachment")
+	renderPassColorAttachment.view = nextTexture
+	renderPassColorAttachment.loadOp = webgpu.WGPULoadOp_Clear
+	renderPassColorAttachment.storeOp = webgpu.WGPUStoreOp_Store
+	renderPassColorAttachment.clearValue = ffi.new("WGPUColor", { 0.9, 0.1, 0.2, 1.0 })
+	-- local attachments = ffi.new("attachment") -- An array is needed, but we only use 1 render target
+
+	local descriptor = ffi.new("WGPURenderPassDescriptor")
+	descriptor.colorAttachmentCount = 1 -- Only one render target (texture) is needed here
+	descriptor.colorAttachments = renderPassColorAttachment
+
+	descriptor.timestampWriteCount = 0 -- TBD: Do we want that?
+
+	local renderPass = webgpu.wgpuCommandEncoderBeginRenderPass(encoder, descriptor)
+	webgpu.wgpuRenderPassEncoderEnd(renderPass)
 end
 
 -- Placeholder event handler; can be overridden as needed
