@@ -140,6 +140,35 @@ function gpu.inspect_adapter(adapter)
 	print("\tbackendType: ", properties.backendType)
 end
 
+function gpu.create_command_encoder_for_device(device)
+	local descriptor = ffi.new("WGPUCommandEncoderDescriptor")
+	descriptor.label = "My command encoder"
+
+	local encoder = webgpu.wgpuDeviceCreateCommandEncoder(device, descriptor)
+	webgpu.wgpuCommandEncoderInsertDebugMarker(encoder, "First debug marker")
+	webgpu.wgpuCommandEncoderInsertDebugMarker(encoder, "Second debug marker")
+end
+
+function gpu.create_command_buffer_from_encoder(encoder)
+	local descriptor = ffi.new("WGPUCommandBufferDescriptor")
+	descriptor.label = "My command buffer"
+
+	local commandBuffer = webgpu.wgpuCommandEncoderFinish(encoder, descriptor)
+	return commandBuffer
+end
+
+function gpu.submit_work_to_device_queue(device, commandBuffer)
+	local queue = webgpu.wgpuDeviceGetQueue(device)
+
+	-- TODO register only once, since there is just a single queue?
+	local function onWorkDone(status, userdata)
+		gpu.SUBMITTED_WORK_DONE(status, userdata)
+	end
+	webgpu.wgpuQueueOnSubmittedWorkDone(queue, onWorkDone, nil)
+
+	webgpu.wgpuQueueSubmit(queue, 1, commandBuffer) -- TBD get len from buffer or encoder?
+end
+
 function gpu.request_device_for_adapter(adapter, options)
 	options = options or {}
 	options.defaultQueue = options.defaultQueue or {}
@@ -210,6 +239,10 @@ end
 
 function gpu.UNCAPTURED_DEVICE_ERROR(deviceInfo, errorType, message, userdata)
 	print("UNCAPTURED_DEVICE_ERROR", deviceInfo, errorType, message, userdata)
+end
+
+function gpu.SUBMITTED_WORK_DONE(status, userdata)
+	print("SUBMITTED_WORK_DONE", status, userdata)
 end
 
 gpu.load_cdefs()
