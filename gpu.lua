@@ -139,14 +139,14 @@ function gpu.inspect_adapter(adapter)
 	print("\tbackendType: ", properties.backendType)
 end
 
--- This should work with LuaJIT/PUC Lua only
+-- This should work with stock LuaJIT/PUC Lua
 function gpu.run_ui_loop_with_glfw(window)
 	while glfw.glfwWindowShouldClose(window) == 0 do
 		glfw.glfwPollEvents()
 	end
 end
 
--- This only works if using evo, luvit, or the luv bindings manually
+-- This only works if using evo, luvit, or when using the luv bindings manually
 function gpu.run_ui_loop_with_libuv(window)
 	local uv = require("uv")
 	local timer = uv.new_timer()
