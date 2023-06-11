@@ -94,6 +94,7 @@ function gpu.create_swap_chain_for_window_surface(instance, window, device, adap
 	descriptor.presentMode = webgpu.WGPUPresentMode_Fifo
 
 	local swapChain = webgpu.wgpuDeviceCreateSwapChain(device, surface, descriptor)
+	return swapChain
 end
 
 function gpu.inspect_adapter(adapter)
@@ -227,24 +228,37 @@ function gpu.request_device_for_adapter(adapter, options)
 end
 
 -- This should work with stock LuaJIT/PUC Lua
-function gpu.run_ui_loop_with_glfw(window)
+function gpu.run_ui_loop_with_glfw(window, chain)
 	while glfw.glfwWindowShouldClose(window) == 0 do
 		glfw.glfwPollEvents()
+		gpu.render_next_frame(chain)
 	end
 end
 
 -- This only works if using evo, luvit, or when using the luv bindings manually
-function gpu.run_ui_loop_with_libuv(window)
+function gpu.run_ui_loop_with_libuv(window, chain)
 	local uv = require("uv")
 	local timer = uv.new_timer()
 	local updateTimeInMilliseconds = 16
 	timer:start(0, updateTimeInMilliseconds, function()
 		glfw.glfwPollEvents()
+		gpu.render_next_frame(chain)
 		if glfw.glfwWindowShouldClose(window) ~= 0 then
 			timer:stop()
 			uv.stop()
 		end
 	end)
+end
+
+function gpu.render_next_frame(chain)
+	if not chain then
+		return
+	end
+
+	local nextTexure = webgpu.wgpuSwapChainGetCurrentTextureView(chain)
+	assert(nextTexure, "Cannot acquire next swap chain texture (window surface has changed?)")
+
+	webgpu.wgpuSwapChainPresent(chain)
 end
 
 -- Placeholder event handler; can be overridden as needed
