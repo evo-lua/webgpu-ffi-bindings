@@ -1,1 +1,1 @@
--- See https://eliemichel.github.io/LearnWebGPU/getting-started/the-command-queue.html
+-- Based on https://eliemichel.github.io/LearnWebGPU/getting-started/the-command-queue.html
