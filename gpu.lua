@@ -60,12 +60,12 @@ function gpu.initialize()
 	adapterOpts.compatibleSurface = surface
 
 	local requestedAdapter
-	local function onAdapterRequested(status, adapter, message, pUserData)
+	local function onAdapterRequested(status, adapter, message, userData)
+		webgpu.ADAPTER_REQUEST_FINISHED(status, adapter, message, userData)
 		assert(status == webgpu.WGPURequestAdapterStatus_Success, "Failed to request adapter")
 		requestedAdapter = adapter
 	end
-	local userdata = nil -- TBD
-	webgpu.wgpuInstanceRequestAdapter(instance, adapterOpts, onAdapterRequested, userdata)
+	webgpu.wgpuInstanceRequestAdapter(instance, adapterOpts, onAdapterRequested, nil)
 
 	local function inspectAdapter(adapter)
 		local featureCount = webgpu.wgpuAdapterEnumerateFeatures(adapter, nil)
