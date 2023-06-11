@@ -82,6 +82,20 @@ function gpu.request_adapter_for_window_surface(instance, window)
 	return requestedAdapter
 end
 
+function gpu.create_swap_chain_for_window_surface(instance, window, device, adapter)
+	local surface = glfwExt.glfwGetWGPUSurface(instance, window)
+	local descriptor = ffi.new("WGPUSwapChainDescriptor")
+	descriptor.width = 640
+	descriptor.height = 480
+
+	local textureFormat = webgpu.wgpuSurfaceGetPreferredFormat(surface, adapter)
+	descriptor.format = textureFormat
+	descriptor.usage = webgpu.WGPUTextureUsage_RenderAttachment
+	descriptor.presentMode = webgpu.WGPUPresentMode_Fifo
+
+	local swapChain = webgpu.wgpuDeviceCreateSwapChain(device, surface, descriptor)
+end
+
 function gpu.inspect_adapter(adapter)
 	local featureCount = webgpu.wgpuAdapterEnumerateFeatures(adapter, nil)
 	local features = ffi.new("WGPUFeatureName[?]", featureCount)
