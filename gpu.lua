@@ -77,7 +77,8 @@ function gpu.request_adapter_for_window_surface(instance, window)
 	-- The callback is always triggered before wgpuInstanceRequestAdapter returns?
 	-- Source: https://eliemichel.github.io/LearnWebGPU/getting-started/the-adapter.html
 	-- TBD: Why does it use a callback, then? Will this behavior change in the future?
-	assert(requestedAdapter, "onAdapterRequested did not trigger, but it should have") -- Better safe than sorry
+	assert(requestedAdapter, "onAdapterRequested did not trigger, but it should have")
+
 	return requestedAdapter
 end
 
@@ -139,6 +140,38 @@ function gpu.inspect_adapter(adapter)
 	print("\tbackendType: ", properties.backendType)
 end
 
+function gpu.request_device_for_adapter(adapter, options)
+	options = options or {}
+	options.defaultQueue = options.defaultQueue or {}
+
+	options.label = options.label or "Logical WebGPU Device"
+	options.requiredFeaturesCount = options.requiredFeaturesCount or 0
+	options.defaultQueue.label = options.defaultQueue.label or "Default Queue"
+
+	local deviceDescriptor = ffi.new("WGPUDeviceDescriptor")
+	deviceDescriptor.label = options.label
+	deviceDescriptor.requiredFeaturesCount = options.requiredFeaturesCount
+	deviceDescriptor.defaultQueue.label = options.defaultQueue.label
+
+	local requestedDevice
+	local function onDeviceRequested(status, device, message, userdata)
+		gpu.DEVICE_REQUEST_FINISHED(status, device, message, userdata)
+		assert(status == webgpu.WGPURequestDeviceStatus_Success, "Failed to request logical device")
+		requestedDevice = device
+	end
+	webgpu.wgpuAdapterRequestDevice(adapter, deviceDescriptor, onDeviceRequested, nil)
+
+	assert(requestedDevice, "onDeviceRequested did not trigger, but it should have")
+
+	local deviceInfo = {
+		device = requestedDevice,
+		descriptor = deviceDescriptor,
+		options = options,
+	}
+
+	return deviceInfo
+end
+
 -- This should work with stock LuaJIT/PUC Lua
 function gpu.run_ui_loop_with_glfw(window)
 	while glfw.glfwWindowShouldClose(window) == 0 do
@@ -163,6 +196,10 @@ end
 -- Placeholder event handler; can be overridden as needed
 function gpu.ADAPTER_REQUEST_FINISHED(status, adapter, message, userdata)
 	print("ADAPTER_REQUEST_FINISHED", status, adapter, message, userdata)
+end
+
+function gpu.DEVICE_REQUEST_FINISHED(status, device, message, userdata)
+	print("DEVICE_REQUEST_FINISHED", status, device, message, userdata)
 end
 
 gpu.load_cdefs()
