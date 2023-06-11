@@ -1,1 +1,1 @@
--- See https://eliemichel.github.io/LearnWebGPU/getting-started/the-device.html
+-- Based on https://eliemichel.github.io/LearnWebGPU/getting-started/the-device.html
