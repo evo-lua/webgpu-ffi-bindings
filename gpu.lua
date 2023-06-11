@@ -301,6 +301,18 @@ end
 
 function gpu.UNCAPTURED_DEVICE_ERROR(deviceInfo, errorType, message, userdata)
 	print("UNCAPTURED_DEVICE_ERROR", deviceInfo, errorType, message, userdata)
+
+	local errorTypes = {
+		[0] = "WGPUErrorType_NoError",
+		"WGPUErrorType_Validation",
+		"WGPUErrorType_OutOfMemory",
+		"WGPUErrorType_Internal",
+		"WGPUErrorType_Unknown",
+		"WGPUErrorType_DeviceLost",
+		"WGPUErrorType_Force32",
+	}
+
+	print(errorTypes[tonumber(errorType)], ffi.string(message))
 end
 
 function gpu.SUBMITTED_WORK_DONE(status, userdata)
