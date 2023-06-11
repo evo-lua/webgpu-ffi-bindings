@@ -141,7 +141,9 @@ end
 
 -- This should work with LuaJIT/PUC Lua only
 function gpu.run_ui_loop_with_glfw(window)
-	-- TODO
+	while glfw.glfwWindowShouldClose(window) == 0 do
+		glfw.glfwPollEvents()
+	end
 end
 
 -- This only works if using evo, luvit, or the luv bindings manually
