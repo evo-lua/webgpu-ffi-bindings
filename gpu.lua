@@ -169,6 +169,12 @@ function gpu.request_device_for_adapter(adapter, options)
 		options = options,
 	}
 
+	local function onDeviceError(errorType, message, userdata)
+		gpu.UNCAPTURED_DEVICE_ERROR(deviceInfo, errorType, message, userdata)
+	end
+
+	webgpu.wgpuDeviceSetUncapturedErrorCallback(requestedDevice, onDeviceError, nil)
+
 	return deviceInfo
 end
 
@@ -200,6 +206,10 @@ end
 
 function gpu.DEVICE_REQUEST_FINISHED(status, device, message, userdata)
 	print("DEVICE_REQUEST_FINISHED", status, device, message, userdata)
+end
+
+function gpu.UNCAPTURED_DEVICE_ERROR(deviceInfo, errorType, message, userdata)
+	print("UNCAPTURED_DEVICE_ERROR", deviceInfo, errorType, message, userdata)
 end
 
 gpu.load_cdefs()
