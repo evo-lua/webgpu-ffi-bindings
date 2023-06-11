@@ -145,8 +145,11 @@ function gpu.create_command_encoder_for_device(device)
 	descriptor.label = "My command encoder"
 
 	local encoder = webgpu.wgpuDeviceCreateCommandEncoder(device, descriptor)
+
 	webgpu.wgpuCommandEncoderInsertDebugMarker(encoder, "First debug marker")
 	webgpu.wgpuCommandEncoderInsertDebugMarker(encoder, "Second debug marker")
+
+	return encoder
 end
 
 function gpu.create_command_buffer_from_encoder(encoder)
@@ -166,7 +169,9 @@ function gpu.submit_work_to_device_queue(device, commandBuffer)
 	end
 	webgpu.wgpuQueueOnSubmittedWorkDone(queue, onWorkDone, nil)
 
-	webgpu.wgpuQueueSubmit(queue, 1, commandBuffer) -- TBD get len from buffer or encoder?
+	-- The WebGPU API expects an array here, but we only submit a single buffer to keep things simple
+	local commandBuffers = ffi.new("WGPUCommandBuffer[1]", commandBuffer)
+	webgpu.wgpuQueueSubmit(queue, 1, commandBuffers)
 end
 
 function gpu.request_device_for_adapter(adapter, options)
