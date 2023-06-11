@@ -1,1 +1,1 @@
--- See https://eliemichel.github.io/LearnWebGPU/getting-started/first-color.html
+-- Based on https://eliemichel.github.io/LearnWebGPU/getting-started/first-color.html
