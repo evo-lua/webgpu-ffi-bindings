@@ -1,4 +1,4 @@
--- See https://eliemichel.github.io/LearnWebGPU/getting-started/the-adapter.html
+-- Based on https://eliemichel.github.io/LearnWebGPU/getting-started/the-adapter.html
 local gpu = require("gpu")
 
 local context = gpu.initialize_webgpu_context()
