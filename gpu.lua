@@ -168,9 +168,9 @@ function gpu.create_command_encoder_for_device(device)
 end
 
 -- TODO register only once, since there is just a single queue?
-local function onWorkDone(status, userdata)
-	gpu.SUBMITTED_WORK_DONE(status, userdata)
-end
+-- local function onWorkDone(status, userdata)
+-- 	gpu.SUBMITTED_WORK_DONE(status, userdata)
+-- end
 
 function gpu.create_command_buffer_from_encoder(encoder)
 	local descriptor = ffi.new("WGPUCommandBufferDescriptor")
@@ -289,6 +289,120 @@ function gpu.encode_render_pass(encoder, nextTexture)
 
 	local renderPass = webgpu.wgpuCommandEncoderBeginRenderPass(encoder, descriptor)
 	webgpu.wgpuRenderPassEncoderEnd(renderPass)
+end
+
+local bit = require("bit")
+local binary_negation = bit.bnot
+
+function gpu.create_triangle_render_pipeline(device, instance, window, adapter)
+	local surface = glfwExt.glfwGetWGPUSurface(instance, window)
+	local descriptor = ffi.new("WGPURenderPipelineDescriptor")
+	local pipelineDesc = descriptor
+
+	-- Create shader modules ("DLL for the GPU" -  here: one program with two entry points for vertex/fragment stages)
+	local shaderSource = [[
+		@vertex
+		fn vs_main(@builtin(vertex_index) in_vertex_index: u32) -> @builtin(position) vec4f {
+			var p = vec2f(0.0, 0.0);
+			if (in_vertex_index == 0u) {
+				p = vec2f(-0.5, -0.5);
+			} else if (in_vertex_index == 1u) {
+				p = vec2f(0.5, -0.5);
+			} else {
+				p = vec2f(0.0, 0.5);
+			}
+			return vec4f(p, 0.0, 1.0);
+		}
+
+		@fragment
+		fn fs_main() -> @location(0) vec4f {
+			return vec4f(0.0, 0.4, 1.0, 1.0);
+		}
+	]]
+	-- TBD wgpu only? What?
+	-- shaderDesc.hintCount = 0;
+	-- shaderDesc.hints = nullptr;
+
+	local shaderDesc = ffi.new("WGPUShaderModuleDescriptor")
+	local shaderCodeDesc = ffi.new("WGPUShaderModuleWGSLDescriptor")
+	-- shaderCodeDesc.chain.next = nullptr;
+	shaderCodeDesc.chain.sType = webgpu.WGPUSType_ShaderModuleWGSLDescriptor
+	-- Connect the chain
+	shaderDesc.nextInChain = shaderCodeDesc.chain
+	shaderCodeDesc.code = shaderSource -- Dawn: source ? sigh...
+
+	local shaderModule = webgpu.wgpuDeviceCreateShaderModule(device, shaderDesc)
+
+	-- Configure vertex processing pipeline (vertex fetch/vertex shader stages)
+	pipelineDesc.vertex.bufferCount = 0
+	-- pipelineDesc.vertex.buffers = nullptr;
+
+	pipelineDesc.vertex.module = shaderModule
+	pipelineDesc.vertex.entryPoint = "vs_main"
+	pipelineDesc.vertex.constantCount = 0
+	-- pipelineDesc.vertex.constants = nullptr;
+
+	-- Configure primitive generation pipeline (primitive assembly/rasterization stages)
+	-- Each sequence of 3 vertices is considered as a triangle
+	pipelineDesc.primitive.topology = webgpu.WGPUPrimitiveTopology_TriangleList
+
+	-- We'll see later how to specify the order in which vertices should be
+	-- connected. When not specified, vertices are considered sequentially.
+	pipelineDesc.primitive.stripIndexFormat = webgpu.WGPUIndexFormat_Undefined
+
+	-- The face orientation is defined by assuming that when looking
+	-- from the front of the face, its corner vertices are enumerated
+	-- in the counter-clockwise (CCW) order.
+	pipelineDesc.primitive.frontFace = webgpu.WGPUFrontFace_CCW
+
+	-- But the face orientation does not matter much because we do not
+	-- cull (i.e. "hide") the faces pointing away from us (which is often
+	-- used for optimization).
+	pipelineDesc.primitive.cullMode = webgpu.WGPUCullMode_None
+
+	-- Configure pixel generation pipeline (fragment shader stage)
+	local fragmentState = ffi.new("WGPUFragmentState")
+	fragmentState.module = shaderModule
+	fragmentState.entryPoint = "fs_main"
+	fragmentState.constantCount = 0
+	-- fragmentState.constants = nullptr;
+	-- [...] We'll configure the blend stage here
+	pipelineDesc.fragment = fragmentState
+
+	-- Configure depth and stencil testing pipeline (stencil/depth stages)
+	-- pipelineDesc.depthStencil = nullptr;
+
+	-- Configure alpha blending pipeline (blending stage)
+	local blendState = ffi.new("WGPUBlendState")
+	local colorTarget = ffi.new("WGPUColorTargetState")
+	colorTarget.format = webgpu.wgpuSurfaceGetPreferredFormat(surface, adapter)
+	colorTarget.blend = blendState
+	colorTarget.writeMask = webgpu.WGPUColorWriteMask_All -- We could write to only some of the color channels.
+
+	--We have only one target because our render pass has only one output color attachment.
+	fragmentState.targetCount = 1
+	fragmentState.targets = colorTarget -- TBD array?
+
+	-- pipelineDesc.fragment = fragmentState; -- TBD here?
+
+	blendState.color.srcFactor = webgpu.WGPUBlendFactor_SrcAlpha
+	blendState.color.dstFactor = webgpu.WGPUBlendFactor_OneMinusSrcAlpha
+	blendState.color.operation = webgpu.WGPUBlendOperation_Add
+
+	-- 	blendState.alpha.srcFactor = webgpu.WGPUBlendFactor_Zero
+	-- blendState.alpha.dstFactor = webgpu.WGPUBlendFactor_One
+	-- blendState.alpha.operation = webgpu.WGPUBlendOperation_Add
+
+	-- Configure multisampling (here: disabled - don't map fragments to more than one sample)
+	pipelineDesc.multisample.count = 1 -- Samples per pixel
+	pipelineDesc.multisample.mask = binary_negation(0) -- Default value for the mask, meaning "all bits on"
+	pipelineDesc.multisample.alphaToCoverageEnabled = false -- Default value as well (irrelevant for count = 1 anyways)
+
+	-- Configure shader I/O bindings (buffers/textures - here, we omit this since they aren't yet needed)
+	-- pipelineDesc.layout = nullptr
+
+	local pipeline = webgpu.wgpuDeviceCreateRenderPipeline(device, descriptor)
+	return pipeline
 end
 
 -- Placeholder event handler; can be overridden as needed
