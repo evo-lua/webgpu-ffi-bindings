@@ -167,6 +167,11 @@ function gpu.create_command_encoder_for_device(device)
 	return encoder
 end
 
+-- TODO register only once, since there is just a single queue?
+local function onWorkDone(status, userdata)
+	gpu.SUBMITTED_WORK_DONE(status, userdata)
+end
+
 function gpu.create_command_buffer_from_encoder(encoder)
 	local descriptor = ffi.new("WGPUCommandBufferDescriptor")
 	descriptor.label = "My command buffer"
@@ -178,11 +183,7 @@ end
 function gpu.submit_work_to_device_queue(device, commandBuffer)
 	local queue = webgpu.wgpuDeviceGetQueue(device)
 
-	-- TODO register only once, since there is just a single queue?
-	local function onWorkDone(status, userdata)
-		gpu.SUBMITTED_WORK_DONE(status, userdata)
-	end
-	webgpu.wgpuQueueOnSubmittedWorkDone(queue, onWorkDone, nil)
+	-- webgpu.wgpuQueueOnSubmittedWorkDone(queue, onWorkDone, nil) -- Exhausts FFI callback slots, needs a better approach
 
 	-- The WebGPU API expects an array here, but we only submit a single buffer) to keep things simple)
 	local commandBuffers = ffi.new("WGPUCommandBuffer[1]", commandBuffer)
