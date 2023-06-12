@@ -288,6 +288,13 @@ function gpu.encode_render_pass(encoder, nextTexture)
 	descriptor.timestampWriteCount = 0 -- TBD: Do we want that?
 
 	local renderPass = webgpu.wgpuCommandEncoderBeginRenderPass(encoder, descriptor)
+
+	-- HACK, obviously
+	if _G.TRIANGLE_RENDERING_PIPELINE then
+		webgpu.wgpuRenderPassEncoderSetPipeline(renderPass, _G.TRIANGLE_RENDERING_PIPELINE) -- Select which render pipeline to use
+		webgpu.wgpuRenderPassEncoderDraw(renderPass, 3, 1, 0, 0) -- Draw 1 instance of a 3-vertices shape
+	end
+
 	webgpu.wgpuRenderPassEncoderEnd(renderPass)
 end
 
