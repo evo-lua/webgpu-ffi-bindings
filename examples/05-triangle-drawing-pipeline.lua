@@ -9,6 +9,10 @@ local deviceInfo = gpu.request_device_for_adapter(adapter)
 
 local chain = gpu.create_swap_chain_for_window_surface(context, window, deviceInfo.device, adapter)
 
+local pipeline = gpu.create_triangle_render_pipeline(deviceInfo.device, context, window, adapter)
+
+assert(pipeline, "Failed to create triangle rendering pipeline")
+
 -- Can now run the GLFW UI loop, either manually or with a polling timer (requires libuv)
 local success, uv = pcall(require, "uv")
 local isAsyncRuntime = success and (type(uv) == "table")
