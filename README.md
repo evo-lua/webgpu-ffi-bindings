@@ -39,6 +39,8 @@ If all goes well I might build some more high-level abstractions on top to make 
 
 Prototype, proof of concept, or whatever you want to call "I had this crazy idea and I want to try out if it works".
 
+**UPDATE:** Development here is currently halted as I've moved WebGPU support into the runtime itself. This may change in the future.
+
 ## Roadmap
 
 - [x] Auto-generate FFI bindings from the WebGPU C API headers
